@@ -9,7 +9,8 @@
 
 import 'package:flutter/material.dart';
 
-typedef ImageSequenceProcessCallback = void Function(ImageSequenceAnimatorState _imageSequenceAnimator);
+typedef ImageSequenceProcessCallback = void Function(
+    ImageSequenceAnimatorState _imageSequenceAnimator);
 
 class ImageSequenceAnimator extends StatefulWidget {
   ///The folder of your image sequence relative to your assets. For example, if you add your image sequence to
@@ -54,6 +55,9 @@ class ImageSequenceAnimator extends StatefulWidget {
   ///Use this value to determine whether your image sequence should start playing immediately or not.
   final bool isAutoPlay;
 
+  ///Use this value to control the frame (and animation) from outside.
+  final int frame;
+
   ///Use this value to determine the color for your image sequence.
   final Color color;
 
@@ -70,23 +74,24 @@ class ImageSequenceAnimator extends StatefulWidget {
   final ImageSequenceProcessCallback onFinishPlaying;
 
   const ImageSequenceAnimator(
-    this.folderName,
-    this.fileName,
-    this.suffixStart,
-    this.suffixCount,
-    this.fileFormat,
-    this.frameCount, {
-    Key key,
-    this.fps: 60,
-    this.isLooping: false,
-    this.isBoomerang: false,
-    this.isAutoPlay: true,
-    this.color: Colors.white,
-    this.onReadyToPlay,
-    this.onStartPlaying,
-    this.onPlaying,
-    this.onFinishPlaying,
-  }) : super(key: key);
+      this.folderName,
+      this.fileName,
+      this.suffixStart,
+      this.suffixCount,
+      this.fileFormat,
+      this.frameCount, {
+        Key key,
+        this.fps: 60,
+        this.isLooping: false,
+        this.isBoomerang: false,
+        this.isAutoPlay: true,
+        this.frame,
+        this.color,
+        this.onReadyToPlay,
+        this.onStartPlaying,
+        this.onPlaying,
+        this.onFinishPlaying,
+      }) : super(key: key);
 
   @override
   ImageSequenceAnimatorState createState() {
@@ -110,7 +115,8 @@ class ImageSequenceAnimator extends StatefulWidget {
   }
 }
 
-class ImageSequenceAnimatorState extends State<ImageSequenceAnimator> with SingleTickerProviderStateMixin {
+class ImageSequenceAnimatorState extends State<ImageSequenceAnimator>
+    with SingleTickerProviderStateMixin {
   final String folderName;
   final String fileName;
   final int suffixStart;
@@ -146,22 +152,22 @@ class ImageSequenceAnimatorState extends State<ImageSequenceAnimator> with Singl
   double get currentTime => animationController.value * fpsInMilliseconds;
 
   ImageSequenceAnimatorState(
-    this.folderName,
-    this.fileName,
-    this.suffixStart,
-    this.suffixCount,
-    this.fileFormat,
-    this.frameCount,
-    this.fps,
-    this.isLooping,
-    this.isBoomerang,
-    this.isAutoPlay,
-    this.color,
-    this.onReadyToPlay,
-    this.onStartPlaying,
-    this.onPlaying,
-    this.onFinishPlaying,
-  );
+      this.folderName,
+      this.fileName,
+      this.suffixStart,
+      this.suffixCount,
+      this.fileFormat,
+      this.frameCount,
+      this.fps,
+      this.isLooping,
+      this.isBoomerang,
+      this.isAutoPlay,
+      this.color,
+      this.onReadyToPlay,
+      this.onStartPlaying,
+      this.onPlaying,
+      this.onFinishPlaying,
+      );
 
   void animationListener() {
     changeNotifier.value++;
@@ -246,7 +252,8 @@ class ImageSequenceAnimatorState extends State<ImageSequenceAnimator> with Singl
   }
 
   void play({double from: -1.0}) {
-    if (!animationController.isAnimating && onStartPlaying != null) onStartPlaying(this);
+    if (!animationController.isAnimating && onStartPlaying != null)
+      onStartPlaying(this);
 
     if (from == -1.0)
       animationController.forward();
@@ -255,7 +262,8 @@ class ImageSequenceAnimatorState extends State<ImageSequenceAnimator> with Singl
   }
 
   void rewind({double from: -1.0}) {
-    if (!animationController.isAnimating && onStartPlaying != null) onStartPlaying(this);
+    if (!animationController.isAnimating && onStartPlaying != null)
+      onStartPlaying(this);
 
     if (from == -1.0)
       animationController.reverse();
@@ -297,14 +305,36 @@ class ImageSequenceAnimatorState extends State<ImageSequenceAnimator> with Singl
   }
 
   String getDirectory() {
-    return folderName + "/" + fileName + getSuffix((suffixStart + previousFrame).toString()) + "." + fileFormat;
+    return folderName +
+        "/" +
+        fileName +
+        getSuffix((suffixStart + previousFrame).toString()) +
+        "." +
+        fileFormat;
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.frame != null) {
+      if (currentFrame == null ||
+          widget.frame != previousFrame ||
+          colorChanged) {
+        colorChanged = false;
+        previousFrame = widget.frame;
+        if (previousFrame < frameCount)
+          currentFrame = Image.asset(
+            getDirectory(),
+            color: color,
+            gaplessPlayback: true,
+          );
+      }
+      return currentFrame;
+    }
     return ValueListenableBuilder(
       builder: (BuildContext context, int change, Widget cachedChild) {
-        if (currentFrame == null || animationController.value.floor() != previousFrame || colorChanged) {
+        if (currentFrame == null ||
+            animationController.value.floor() != previousFrame ||
+            colorChanged) {
           colorChanged = false;
           previousFrame = animationController.value.floor();
           if (previousFrame < frameCount)
